@@ -1,0 +1,86 @@
+---
+- name: Enumerate host public keys
+  ansible.builtin.find:
+    paths: /etc/ssh/
+    patterns: ssh_host_*_key.pub
+  register: ssh_public_keys
+
+- name: Copy remote public key
+  ansible.builtin.fetch:
+    src: "{{ item.path }}"
+    dest: "{{ sshca_host_working_directory }}/"
+    flat: true
+  with_items: "{{ ssh_public_keys.files }}"
+
+- name: Display host principals
+  ansible.builtin.debug:
+    var: sshca_host_signer_principals
+
+#! This does not work with passphrase protected private keys.
+#? Feature request: https://github.com/ansible-collections/community.crypto/issues/195
+# - name: Sign host public keys
+#   delegate_to: localhost
+#   become: false
+#   with_items: "{{ ssh_public_keys.files }}"
+#   vars:
+#     certificate_name: "{{ (item.path | basename | split('.'))[0] }}-cert.pub"
+#     principal_names:
+#       - "{{ ansible_facts.hostname}}"
+#       - "{{ ansible_facts.hostname}}.{{ansible_facts.domain }}"
+#     principal_ips: ansible_facts.all_ipv4_addresses + ansible_facts.all_ipv6_addresses
+#   community.crypto.openssh_cert:
+#     path: "{{ sshca_host_working_directory }}/{{ certificate_name }}"
+#     signing_key: /workspace/.private/keys/ssh/host-ca.key
+#     public_key: "{{ sshca_host_working_directory }}/{{ item.path | basename }}"
+#     identifier: "{{ ansible_facts.hostname }}:ssh-host-ca@zynthovian.xyz"
+#     principals: "{{ (principal_names | list) + (principal_ips | list) }}"
+#     valid_from: -1h
+#     valid_to: +52w
+#     state: present
+#     type: host
+
+- name: "Sign SSH Public Keys."
+  delegate_to: localhost
+  ansible.builtin.expect:
+    command: |
+      ssh-keygen -s "{{ sshca_host_signer_key }}"
+        -I "{{ sshca_host_signer_id }}"
+        -h -n "{{ sshca_host_signer_principals }}"
+        "{{ host_public_ssh_key_path  }}"
+    responses:
+      (?i)passphrase: "{{ sshca_host_key_password }}"
+  become: false
+  no_log: true
+  with_items: "{{ ssh_public_keys.files }}"
+  vars:
+    #certificate_filename: "{{ (item.path | basename | split('.'))[0] }}-cert.pub"
+    #certificate_path: "{{ sshca_host_working_directory }}/{{ certificate_filename }}"
+    host_public_ssh_key_path: "{{ sshca_host_working_directory }}/{{ item.path | basename }}"
+
+- name: Enmerate host certificates
+  delegate_to: localhost
+  become: false
+  ansible.builtin.find:
+    paths: "{{ sshca_host_working_directory }}"
+    patterns: ssh_host_*_key-cert.pub
+  register: ssh_certificates
+
+- name: Copy host certificates to host
+  ansible.builtin.copy:
+    src: "{{ item.path }}"
+    dest: "/etc/ssh/{{ item.path | basename }}"
+    mode: "0644"
+  with_items: "{{ ssh_certificates.files }}"
+  notify: restart sshd
+
+- name: Template HostCertificate configuration drop-in
+  ansible.builtin.copy:
+    content: |
+      {% for certificate_file in ssh_certificates.files %}
+      HostCertificate /etc/ssh/{{ certificate_file.path | basename }}
+      {% endfor %}
+    dest: /etc/ssh/sshd_config.d/100-ansible-certificates.conf
+    owner: root
+    group: root
+    mode: "0600"
+  notify: restart sshd
