@@ -1,0 +1,23 @@
+---
+- name: Install user CAs
+  when: sshca_user_signer_pub is defined
+  block:
+
+    - name: Copy user authority public key to host
+      ansible.builtin.copy:
+        content: "{{ sshca_user_signer_pub }}"
+        dest: "/etc/ssh/{{ sshca_user_signer_pub_filename }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+
+    - name: Template TrustedUserCAKeys configuration drop-in
+      ansible.builtin.copy:
+        content: |
+          TrustedUserCAKeys /etc/ssh/{{ sshca_user_signer_pub_filename }}
+        dest: /etc/ssh/sshd_config.d/100-ansible-usercas.conf
+        owner: root
+        group: root
+        mode: "0600"
+      notify: restart sshd

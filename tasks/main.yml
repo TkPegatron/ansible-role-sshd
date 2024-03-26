@@ -1,6 +1,10 @@
 ---
+- name: Import authority trust establishment tasks
+  ansible.builtin.import_tasks: establish-authorities.yml
+
 - name: Import host certificate signing tasks
   ansible.builtin.import_tasks: sign-host-keys.yml
+  when: sshca_host_signer_key is defined
 
 #- name: Modify drop-in configurations
 #  ansible.builtin.copy:
