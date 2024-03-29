@@ -1,0 +1,1 @@
+sshd_local_working_directory: /tmp/{{ inventory_hostname }}/

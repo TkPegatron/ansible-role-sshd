@@ -1,0 +1,7 @@
+
+__sshd_service: sshd
+__sshd_binary: /usr/sbin/sshd
+__sshd_sftp_server: /usr/libexec/openssh/sftp-server
+
+sshd_cleanup_ignored_dropins:
+  - 50-redhat.conf
