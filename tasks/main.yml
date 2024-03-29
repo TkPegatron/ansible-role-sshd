@@ -6,13 +6,14 @@
   ansible.builtin.import_tasks: sign-host-keys.yml
   when: sshca_host_signer_key is defined
 
-#- name: Modify drop-in configurations
-#  ansible.builtin.copy:
-#    content: "{{ lookup(item.content, 'template') }}"
-#    state: "{{ item.state }}"
-#    path: "/etc/ssh/sshd_config.d/{item.name}"
-#  loop: "{{ ssh_config_dropins }}"
-
-#- name: Install userkey certificate authority
-#  ansible.builtin.copy:
-#    content:
+- name: Deploy arbitrary drop-in configurations
+  ansible.builtin.copy:
+    content: "{{ item.content }}"
+    path: "/etc/ssh/sshd_config.d/{item.name}"
+    validate: "{{ __sshd_binary }} -t -f %s"
+    owner: root
+    group: root
+    mode: "0600"
+  loop: "{{ ssh_config_dropins }}"
+  notify: restart sshd
+  when: sshd_config_dropins is defined
