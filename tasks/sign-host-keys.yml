@@ -70,7 +70,7 @@
   notify: restart sshd
 
 - name: Template HostCertificate configuration drop-in
-  ansible.builtin.template:
+  ansible.builtin.copy:
     content: |
       # -{ Ansible managed }--------------------------------------------------------
       # /etc/ssh/sshd_config.d/100-ansible-hostcas.conf - Configure trusted user CAs

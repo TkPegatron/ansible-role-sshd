@@ -4,7 +4,7 @@
 
 - name: Import host certificate signing tasks
   ansible.builtin.import_tasks: sign-host-keys.yml
-  when: sshca_host_signer_key is defined
+  when: sshd_hostca_key_file is defined
 
 - name: Deploy arbitrary drop-in configurations
   ansible.builtin.copy:
