@@ -9,11 +9,14 @@
 - name: Deploy arbitrary drop-in configurations
   ansible.builtin.copy:
     content: "{{ item.content }}"
-    path: "/etc/ssh/sshd_config.d/{item.name}"
+    dest: "/etc/ssh/sshd_config.d/{{ item.name }}"
     validate: "{{ __sshd_binary }} -t -f %s"
     owner: root
     group: root
     mode: "0600"
-  loop: "{{ ssh_config_dropins }}"
+  loop: "{{ sshd_config_dropins }}"
   notify: restart sshd
   when: sshd_config_dropins is defined
+
+- name: Flush SSHd Handlers
+  ansible.builtin.meta: flush_handlers

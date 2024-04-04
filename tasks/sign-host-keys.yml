@@ -16,8 +16,8 @@
   ansible.builtin.debug:
     var: sshd_hostca_host_principals
 
-#! This does not work with passphrase protected private keys.
-#? Feature request: https://github.com/ansible-collections/community.crypto/issues/195
+# ! This does not work with passphrase protected private keys.
+# ? Feature request: https://github.com/ansible-collections/community.crypto/issues/195
 # - name: Sign host public keys
 #   delegate_to: localhost
 #   become: false
@@ -38,7 +38,8 @@
 - name: "Sign SSH Public Keys."
   delegate_to: localhost
   ansible.builtin.expect:
-    command: | #? The keygen will store the certfile with the key being signed
+    # ? The keygen will store the certfile with the key being signed
+    command: |
       ssh-keygen -s "{{ sshd_hostca_key_file }}"
         -I "{{ sshd_hostca_host_identity }}"
         -h -n "{{ sshd_hostca_host_principals }}"
@@ -49,8 +50,8 @@
   no_log: true
   with_items: "{{ ssh_public_keys.files }}"
   vars:
-    #certificate_filename: "{{ (item.path | basename | split('.'))[0] }}-cert.pub"
-    #certificate_path: "{{ sshd_local_working_directory }}/{{ certificate_filename }}"
+    # certificate_filename: "{{ (item.path | basename | split('.'))[0] }}-cert.pub"
+    # certificate_path: "{{ sshd_local_working_directory }}/{{ certificate_filename }}"
     host_public_ssh_key_path: "{{ sshd_local_working_directory }}/{{ item.path | basename }}"
 
 - name: Enmerate host certificates

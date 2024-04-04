@@ -17,9 +17,9 @@
         content: |
           # -{ Ansible managed }--------------------------------------------------------
           # /etc/ssh/sshd_config.d/100-ansible-usercas.conf - Configure trusted user CAs
-          {% for item in  sshd_userca_signers %}
+          {% for item in sshd_userca_signers %}
           TrustedUserCAKeys /etc/ssh/{{ item.filename }}
-          {% endfor%}
+          {% endfor %}
         dest: /etc/ssh/sshd_config.d/100-ansible-usercas.conf
         validate: "{{ __sshd_binary }} -t -f %s"
         owner: root
